@@ -7,14 +7,23 @@ const Credit_Schema = Schema(
             required: true,
             ref: 'User',
         },
-        text: [{
+        title : {
+            type: String,
+            required: true,
+        },
+        category : {
+            type: String,
+            required: true,
+            default: 'Open'
+        },
+        content: {
             type: String,
             required: true,
             default: 'エラー',
-        }],
+        },
         creatate: {
             type: Date,
-            required: true,
+            default: Date.now, // Set default to current date
         }
     }
 )
