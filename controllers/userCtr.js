@@ -9,7 +9,6 @@ const User = model('User')
 exports.login = async (req, res) => {
     try {
         const { email, pwd } = req.body
-        console.log('////', pwd)
         const user = await User.findOne({ email })
         if (!user) {
             res.status(401).json({ message: 'user_not_exist' })
@@ -43,8 +42,8 @@ exports.login = async (req, res) => {
 
 exports.register = async (req, res) => {
     try {
-        const { email, name, pwd } = req.body
-
+        const { name, companyname, birthdate, email, pwd } = req.body
+        console.log("data", req.body);
         const user = await User.findOne({ email })
 
         if (user) {
@@ -54,7 +53,32 @@ exports.register = async (req, res) => {
 
         const salt = await bcrypt.genSalt(10);
 
-        const createdUser = await User.create({ email, name, pwd: await bcrypt.hash(pwd, salt) })
+        const createdUser = await User.create({ name, companyname, birthdate, email, pwd: await bcrypt.hash(pwd, salt) })
+        if (createdUser) {
+            res.json({ message: 'user_registration_succeeded' })
+        } else {
+            res.status(500).json({ message: 'error' })
+        }
+
+    } catch (err) {
+        res.status(500).json({ message: err.message })
+    }
+}
+exports.adduser = async (req, res) => {
+    try {
+        const { name, companyname, birthdate, email } = req.body
+        const pwd = '000000'
+        console.log("data", req.body);
+        const user = await User.findOne({ email })
+
+        if (user) {
+            res.status(402).json({ message: 'user_exist' })
+            return
+        }
+
+        const salt = await bcrypt.genSalt(10);
+
+        const createdUser = await User.create({ name, companyname, birthdate, email, pwd: await bcrypt.hash(pwd, salt) })
         if (createdUser) {
             res.json({ message: 'user_registration_succeeded' })
         } else {
@@ -95,6 +119,21 @@ exports.update = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 }
+
+exports.users = async (req, res) => {
+    try {
+        const users = await User.find(); // Fetch all users
+        res.status(200).json(users);     // Send users data as JSON response
+        console.log(users);
+    } catch (err) {
+        res.status(500).json({ error: err.message }); // Handle errors
+    }
+}
+
+exports.userInfo = async (req, res) => {
+
+}
+
 
 const { google } = require('googleapis');
 

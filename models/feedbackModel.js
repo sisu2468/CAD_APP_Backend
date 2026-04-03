@@ -1,22 +1,34 @@
 const { Schema, model } = require('mongoose')
 
-const Credit_Schema = Schema(
+const Feedback_Schema = Schema(
     {
-        user : {
-            type: Schema.Types.ObjectId,
+        user: {
+            type: String,
             required: true,
-            ref: 'User',
         },
-        text: [{
+        title : {
+            type: String,
+            required: true,
+        },
+        category : {
+            type: String,
+            required: true,
+        },
+        status : {
+            type: String,
+            required: true,
+            default: 'OPEN',
+        },
+        content: {
             type: String,
             required: true,
             default: 'エラー',
-        }],
-        creatate: {
+        },
+        creatdate: {
             type: Date,
-            required: true,
+            default: Date.now, // Set default to current date
         }
     }
 )
 
-model('Credit', Credit_Schema)
+model('Feedback', Feedback_Schema)

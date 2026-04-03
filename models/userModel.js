@@ -2,14 +2,18 @@ const { Schema, model } = require('mongoose')
 
 const UserSchema = Schema(
     {
+        name: {
+            type: String,
+            required: true,
+        },
         email: {
             type: String,
             required: true,
             unique: true,
         },
-        name: {
-            type: String,
-            required: true,
+        phonenumber: {
+            type: Number,
+            default: '81',
         },
         companyname: {
             type: String,
@@ -36,9 +40,8 @@ const UserSchema = Schema(
         },
         createdate: {
             type: Date,
-            required: true,
             default: Date.now, // Set default to current date
-        }
+        },
     },
     {
         collection: process.env.DB_COLLECTION_PREFIX + 'users',
