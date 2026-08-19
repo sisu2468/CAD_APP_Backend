@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -67,6 +68,17 @@ app.get('/health', (_req, res) => {
     data: { uptime: process.uptime(), status: 'ok' },
   });
 });
+
+app.use(
+  '/cad-previews',
+  express.static(path.join(process.cwd(), 'cad-previews'), {
+    setHeaders(res) {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.setHeader('Cache-Control', 'public, max-age=120');
+    },
+  })
+);
 
 const authRoutes = require('./routes/authRoutes');
 const cadRoutes = require('./routes/cadRoutes');

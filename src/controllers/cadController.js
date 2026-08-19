@@ -7,6 +7,7 @@ const logger = require('../config/logger');
 const config = require('../config/config');
 const cadModelService = require('../services/cadModelService');
 const { uploadDir } = require('../middlewares/upload');
+const { materializePreview } = require('../utils/cadPreview');
 
 const BASE64_KEYS = ['image', 'file', 'files', 'photo', 'data', 'imageBase64'];
 
@@ -212,7 +213,55 @@ function filenameFromDisposition(disposition, fallback = 'cad_output.dxf') {
   return match ? decodeURIComponent(match[1]) : fallback;
 }
 
+function frontendPreviewPayload(req, data) {
+  const pngUrl = data.png_url;
+  const includeBase64 = req.query.include_base64 === '1';
+  const payload = {
+    image: pngUrl,
+    uri: pngUrl,
+    url: pngUrl,
+    file: pngUrl,
+    preview: pngUrl,
+    preview_url: pngUrl,
+    png_url: pngUrl,
+    pdf_url: data.pdf_url || null,
+    png_filename: data.png_filename,
+    pdf_filename: data.pdf_filename || null,
+    png_content_type: data.png_content_type || 'image/png',
+    pdf_content_type: data.pdf_content_type || null,
+    output_name: data.output_name || req.body?.output_name,
+  };
+  if (includeBase64) {
+    payload.image_data_uri = data.image;
+    payload.png_base64 = data.png_base64 || null;
+  }
+  return payload;
+}
+
 function sendCadResult(req, res, result) {
+  if (result.kind === 'json') {
+    const data = materializePreview(req, result.payload || {});
+    const payload = frontendPreviewPayload(req, data);
+    // eslint-disable-next-line no-console
+    console.log(
+      [
+        '',
+        '========== CAD PREVIEW ==========',
+        `frontend image: ${payload.image}`,
+        `png url:        ${payload.png_url || '(none)'}`,
+        `pdf url:        ${payload.pdf_url || '(none)'}`,
+        `png filename:   ${payload.png_filename || '(none)'}`,
+        `preview path:   ${data.preview_path || '(none)'}`,
+        '=================================',
+        '',
+      ].join('\n')
+    );
+    return res.json({
+      status: 'success',
+      data: payload,
+    });
+  }
+
   const filename = filenameFromDisposition(result.contentDisposition, 'cad_output.dxf');
   const accept = String(req.headers.accept || '');
   const wantsFile =
@@ -230,6 +279,31 @@ function sendCadResult(req, res, result) {
     }
     res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition, Content-Type');
     return res.send(result.buffer);
+  }
+
+  const looksLikePng = result.buffer[0] === 0x89 && result.buffer[1] === 0x50;
+  const looksLikeJpeg = result.buffer[0] === 0xff && result.buffer[1] === 0xd8;
+  if (looksLikePng || looksLikeJpeg) {
+    const previewPayload = materializePreview(req, {
+      png_base64: result.buffer.toString('base64'),
+      png_filename: filename || 'outline.png',
+      png_content_type: looksLikePng ? 'image/png' : 'image/jpeg',
+      output_name: req.body?.output_name,
+    });
+    // eslint-disable-next-line no-console
+    console.log(
+      [
+        '',
+        '========== CAD PREVIEW ==========',
+        `image url:     ${previewPayload.png_url}`,
+        '=================================',
+        '',
+      ].join('\n')
+    );
+    return res.json({
+      status: 'success',
+      data: frontendPreviewPayload(req, previewPayload),
+    });
   }
 
   logCadResult(req, result, filename, 'JSON { status, data.filename, data.file(base64) }');

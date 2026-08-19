@@ -1,5 +1,6 @@
 /node_modules
 /uploads
+/cad-previews
 /build
 
 .env

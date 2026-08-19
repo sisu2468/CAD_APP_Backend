@@ -21,7 +21,8 @@ async function postToModel(pathname, { files = [], fields = {} } = {}) {
     await appendFile(form, field, file);
   }
 
-  for (const [key, value] of Object.entries(fields)) {
+  const outgoing = { format: 'json', ...fields };
+  for (const [key, value] of Object.entries(outgoing)) {
     if (value !== undefined && value !== null && String(value).trim() !== '') {
       form.append(key, String(value));
     }
@@ -58,8 +59,14 @@ async function postToModel(pathname, { files = [], fields = {} } = {}) {
     throw createHttpError(response.status >= 400 ? response.status : 502, message);
   }
 
+  if (contentType.includes('application/json')) {
+    const payload = await response.json();
+    return { kind: 'json', payload };
+  }
+
   const arrayBuffer = await response.arrayBuffer();
   return {
+    kind: 'file',
     buffer: Buffer.from(arrayBuffer),
     contentType: contentType || 'application/octet-stream',
     contentDisposition: response.headers.get('content-disposition'),
