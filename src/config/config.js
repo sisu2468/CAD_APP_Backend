@@ -13,5 +13,9 @@ module.exports = {
     refreshExpiresIn: env.JWT_REFRESH_EXPIRES_IN
   },
   dbCollectionPrefix: env.DB_COLLECTION_PREFIX,
+  cadModel: {
+    apiUrl: String(env.CAD_MODEL_API_URL).replace(/\/$/, ''),
+    timeoutMs: env.CAD_MODEL_TIMEOUT_MS,
+  },
 };
 

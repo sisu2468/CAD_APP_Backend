@@ -7,7 +7,15 @@ const authRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const cadRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 module.exports = {
   authRateLimiter,
+  cadRateLimiter,
 };
 

@@ -1,7 +1,8 @@
+const path = require('path');
 const dotenv = require('dotenv');
 const Joi = require('joi');
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../../.env') }); // load from project root
 
 const envSchema = Joi.object({
   NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
@@ -17,7 +18,9 @@ const envSchema = Joi.object({
   PAYPAL_CLIENT_ID: Joi.string().optional(),
   GOOGLE_OAUTH_CLIENT_ID: Joi.string().optional(),
   GOOGLE_OAUTH_CLIENT_SECRET: Joi.string().optional(),
-  GOOGLE_OAUTH_REDIRECT_URI: Joi.string().optional()
+  GOOGLE_OAUTH_REDIRECT_URI: Joi.string().optional(),
+  CAD_MODEL_API_URL: Joi.string().uri().default('http://127.0.0.1:5000'),
+  CAD_MODEL_TIMEOUT_MS: Joi.number().integer().min(1000).default(180000)
 })
   .unknown(true);
 

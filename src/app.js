@@ -10,9 +10,7 @@ const glob = require('glob');
 const config = require('./config/config');
 const logger = require('./config/logger');
 const errorHandler = require('./middlewares/errorHandler');
-const { success } = require('./utils/apiResponse');
 
-// Initialize models (reuse existing ones under /models)
 glob.sync('./models/**/*.js').forEach((model) => {
   // eslint-disable-next-line import/no-dynamic-require, global-require
   require('../' + model);
@@ -20,33 +18,62 @@ glob.sync('./models/**/*.js').forEach((model) => {
 
 const app = express();
 
-// Core security middlewares
-app.use(helmet());
-app.use(cors());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    exposedHeaders: ['Content-Disposition', 'Content-Type'],
+  })
+);
 app.use(cookieParser());
-app.use(bodyParser.urlencoded({ extended: false, limit: '5mb' }));
-app.use(bodyParser.json({ limit: '5mb' }));
+app.use(bodyParser.urlencoded({ extended: false, limit: '25mb' }));
+app.use(bodyParser.json({ limit: '25mb' }));
 
-// Logging
 app.use(
   morgan('dev', {
     stream: {
-      write: (message) => logger.http ? logger.http(message.trim()) : logger.info(message.trim()),
+      write: (message) => (logger.http ? logger.http(message.trim()) : logger.info(message.trim())),
     },
   })
 );
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json(success({ uptime: process.uptime(), status: 'ok' }));
+app.get('/', (_req, res) => {
+  res.json({
+    name: 'CAD Extraction API',
+    version: '1.0.0',
+    status: 'healthy',
+    message: 'CAD Extraction API is running',
+    endpoints: {
+      'GET /health': 'Health check',
+      'GET /api/cad/health': 'CAD model health',
+      'POST /api/process-image': 'Process single image',
+      'POST /api/process-multi-view': 'Process multiple views',
+      'POST /api/process-with-pdf': 'Process and return PDF',
+    },
+  });
 });
 
-// Routes
+app.get('/health', (_req, res) => {
+  res.json({
+    status: 'healthy',
+    message: 'CAD Extraction API is running',
+    data: { uptime: process.uptime(), status: 'ok' },
+  });
+});
+
 const authRoutes = require('./routes/authRoutes');
+const cadRoutes = require('./routes/cadRoutes');
 
 app.use('/api', authRoutes);
+app.use('/api', cadRoutes);
 
-// Global error handler
 app.use(errorHandler);
 
 async function start() {
@@ -54,14 +81,16 @@ async function start() {
   // eslint-disable-next-line no-console
   console.log('MongoDB connected');
   const port = config.port;
-  app.listen(port, () => {
+  const server = app.listen(port, '0.0.0.0', () => {
     // eslint-disable-next-line no-console
     console.log(`Server listening on port ${port}`);
   });
+  server.timeout = 180000;
+  server.keepAliveTimeout = 180000;
+  server.headersTimeout = 181000;
 }
 
 module.exports = {
   app,
   start,
 };
-
